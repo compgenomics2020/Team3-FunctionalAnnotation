@@ -1,11 +1,11 @@
-#Functional Annotation 
+# Functional Annotation 
 
-##Members
+## Members
 Pallavi Misra
 Gulay Bengu Ulukaya
 Cheng Shen-Yi
 
-##Tools
+## Tools
 eggNOG mapper V2
 CARD-rgi
 SignalP
