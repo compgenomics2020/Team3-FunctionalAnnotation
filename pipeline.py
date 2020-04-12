@@ -59,15 +59,16 @@ def VFDB(input_dir,output_dir):
 		command = "blastn -db ../Tools/VFDB/Virulence_Factors_core -query "+input_dir+"/"+files+" -out "+VFDB_output_path+"/"+prefix+"_VFDB_coding -max_hsps 1 -max_target_seqs 1 -num_threads 4 -evalue 1e-5 "
 		subprocess.call(command,shell=True)
 	return(VFDB_output_path)
-def Pilercr(input_dir,output_dir)
+def Pilercr(input_dir,output_dir):
 	make_temp="mkdir "+output_dir+"/pilercr"
 	os.system(make_temp)
 	pilercr_output_path=output_dir+"/pilercr"
 	for filename in os.listdir(input_dir):
 		prefix = filename.split("_")[0]
-		file_path=input_dir+"/pilercr/"+filename
-		command = "../Tools/pilercr/pilercr1.06/pilercr -in ../gene_prediction_updated/Coding_FASTA/"+file+" -out "+pilercr_output_path+"/"+prefix+"_pilercr_coding"
+		file_path=input_dir+"/"+filename
+		command = "../Tools/pilercr/pilercr1.06/pilercr -in "+file_path+" -out "+pilercr_output_path+"/"+prefix+"_pilercr_coding"
 		subprocess.call(command,shell=True)
+	return(pilercr_output_path)
 def eggnog(input,output_dir):
 	make_temp="mkdir "+output_dir+"/eggNOG"
         os.system(make_temp)
@@ -130,6 +131,62 @@ def mapNodes(input_clusters):
 			cluster_dict[node_cluster]=[line_cluster]
 	coding_cluster.close()
 	return(cluster_dict)
+def formatPilercr(input_dir,output_dir):
+	node_full_1="temp"
+	node_full_2="temp"
+	make_temp="mkdir -p "+output_dir+"/format/Pilercr"
+	os.system(make_temp)
+	path_to_Pilercr=input_dir
+	path_to_output=output_dir+"/format/Pilercr"
+	for filename in os.listdir(path_to_Pilercr):
+		sample=filename.split("_")[0]
+		path_to_file=path_to_Pilercr+"/"+filename
+		Pilercr_file=open(path_to_file,"r")
+		Pilercr_file_read=Pilercr_file.readlines()
+		Pilercr_output_path=path_to_output+"/"+sample+"_pilercr.gff"
+		Pilercr_output=open(Pilercr_output_path,"w+")
+		for line in range(len(Pilercr_file_read)):
+			if Pilercr_file_read[line].startswith("Array 1") or Pilercr_file_read[line].startswith("Array 2"):
+				node=Pilercr_file_read[line+1]
+				node_full_1=node.split("\t")[0]
+			if Pilercr_file_read[line].startswith("Array2"):
+				node=Pilercr_file_read[line+1]
+				node_full_2=mode.split("\t")[0]
+			if 'SUMMARY BY POSITION' in Pilercr_file_read[line]:
+				index=0
+				while line+index < len(Pilercr_file_read):
+					#print(Pilercr_file_read[line+index])
+					if node_full_1 in Pilercr_file_read[line+index] or node_full_2 in Pilercr_file_read[line+index]:
+
+						if node_full_1 in Pilercr_file_read[line+index]:
+							node=node_full_1
+							info_line=Pilercr_file_read[line+index+4].split(" ")
+							hold_digit=[]
+							for i in info_line:
+								if i.isdigit():
+									hold_digit=hold_digit+[i]
+							start=hold_digit[1]
+							end=str(int(hold_digit[2])+int(start))
+							gff_line=node.rstrip()+"\tPilercr\tCRISPR_array\t"+start+"\t"+end+"\t.\t.\t.\tfeature=Putative CRISPR array"
+							print(gff_line)
+							Pilercr_output.write(gff_line)
+						elif node_full_2 in Pilercr_file_read[line+index]:
+							node=node_full_2
+							info_line=Pilercr_file_read[line+index+4].split(" ")
+							print(info_line)
+							hold_digit=[]
+							for i in info_line:
+								if i.isdigit():
+									hold_digit=hold_digit+[i]
+							start=hold_digit[1]
+							end=str(int(hold_digit[2])+int(start))
+							#print(start,end)
+							gff_line=node.rstrip()+"\tPilercr\tCRISPR_array\t"+start+"\t"+end+"\t.\t.\t.\tfeature=Putative CRISPR array"
+							print(gff_line)
+							Pilercr_output.write(gff_line)
+					index=index+1
+		Pilercr_output.close()
+		Pilercr_file.close()
 
 def formateggNOG(input,cluster_dict,output_dir):
 	make_temp="mkdir -p "+output_dir+"/format/eggNOG"
@@ -139,7 +196,7 @@ def formateggNOG(input,cluster_dict,output_dir):
 	for line in eggNog_file:
 		if line.startswith("NODE"):
 			annotation_split=line.split("\t")
-			node_eggnog=annotation_split[0]
+			node_eggnog=annotation_split[0]			
 			node_eggnog=node_eggnog.split("_")
 			node_eggnog=node_eggnog[:-1]
 			if len(node_eggnog) > 5:
@@ -172,6 +229,10 @@ def formateggNOG(input,cluster_dict,output_dir):
 							#print(gff_write)
 							gff_eggnog.write(gff_write)
 							gff_eggnog.close()
+	command="for i in "+output_dir+"/format/eggNOG/*; do sort -u $i > ${i}_sorted;done"
+	command2="rm "+output_dir+"/format/eggNOG/*.gff"
+	os.system(command)
+	os.system(command2)
 def formatCARD(input_dir,output_dir):
 	make_temp="mkdir -p "+output_dir+"/format/CARD"
 	os.system(make_temp)
@@ -347,26 +408,26 @@ def main():
 	os.system(make_temp)
 	options, args = opts()
 	input_path=options.input_path
-	Translate(input_path,temp_dir)
-	#output_uclust=uclust(input_path,temp_dir)
-	#input_eggnog=output_uclust[0]
-	#input_map=output_uclust[1]
-	process_CARD=multiprocessing.Process(target=CARD, args=(input_path,temp_dir,))
-	CARD_output_path=output_dir+"/CARD"
-	process_VFDB=multiprocessing.Process(target=VFDB, args=(input_path,temp_dir,))
-	VFDB_output_path=output_dir+"/VFDB"
-	process_CARD.start()
-	process_VFDB.start()
-	process_CARD.join()
-	process_VFDB.join()
+	#Translate(input_path,temp_dir)
+	output_uclust=uclust(input_path,temp_dir)
+	input_eggnog=output_uclust[0]
+	input_map=output_uclust[1]
+	Pilercr_output_path=Pilercr(input_path,temp_dir)
+	CARD_output_path=CARD(input_path,temp_dir)
+	#CARD_output_path=temp_dir+"/CARD"
+	VFDB_output_path=VFDB(input_path,temp_dir)
+	#VFDB_output_path=temp_dir+"/VFDB"
 	#SignalP_output_path=SignalP(input_path,temp_dir)
-	#eggnog(input_eggnog,temp_dir)
-	#cluster_dict=mapNodes(input_map)
-	#formateggNOG("../Outputs/eggNOG/Test_annotations.emapper.annotations",cluster_dict,temp_dir)
-	#formatCARD(CARD_output_path,temp_dir)
-	#formatVFDB(VFDB_output_path,temp_dir)
+	eggnog(input_eggnog,temp_dir)
+	cluster_dict=mapNodes(input_map)
+	#Pilercr_output_path=temp_dir+"/pilercr"
+	formatPilercr(Pilercr_output_path,temp_dir)
+	eggNOG_output=temp_dir+"/eggNOG/pipeline.emapper.annotations"
+	formateggNOG(eggNOG_output,cluster_dict,temp_dir)
+	formatCARD(CARD_output_path,temp_dir)
+	formatVFDB(VFDB_output_path,temp_dir)
 	#formatSignalP("/home/projects/group-c/Team3-FunctionalAnnotation/Outputs/SignalP",temp_dir)
-	#mergeGff(temp_dir)
+	mergeGff(temp_dir)
 	#shutil.rmtree(temp_dir)
 if __name__ == "__main__":
     main()
