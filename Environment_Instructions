@@ -33,3 +33,9 @@ conda install -c conda-forge elfutils
 conda install -c conda-forge openjdk
 #bedtools 2.29.2
 conda install -c bioconda bedtools
+#eggNOG-mapper v2.0.1
+conda install -c bioconda eggnog-mapper
+#prokka v1.14.6
+conda install -c bioconda prokka
+#emboss v6.6.0
+conda install -c bionconda emboss
