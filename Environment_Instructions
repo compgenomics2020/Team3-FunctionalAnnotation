@@ -1,0 +1,35 @@
+######## Seting up the enviroment documentation ########
+
+#go to the path where miniconda is to be added and export it to the $PATH vairble in your .bashrc
+
+### the following steps are to install miniconda and only one person needs to do it
+
+
+wget https://repo.anaconda.com/miniconda/Miniconda2-latest-Linux-x86_64.sh
+
+bash Miniconda2-latest-Linux-x86_64.sh
+
+conda create T3FN
+
+###########For other users##########
+
+#add the location of export PATH="/home/projects/group-c/Team3-GenePrediction/usr/miniconda/bin:$PATH in .bashrc
+
+conda init
+conda activate T3FN
+
+#you can install new tools using conda install toolname or look up conda documentation for the exact code needed. 
+
+##########Setting up the Conda T3FN for Genome Assembly#############
+#blast v2.9.0
+conda install -c bioconda blast
+#rgi v5.1.0
+conda install -c bioconda rgi
+#r-rbokeh v0.6.3
+conda install -c anaconda r-rbokeh
+#elfutils v0.176
+conda install -c conda-forge elfutils
+#java v11.0.1
+conda install -c conda-forge openjdk
+#bedtools 2.29.2
+conda install -c bioconda bedtools
