@@ -5,7 +5,8 @@ from os import popen
 import shutil
 import subprocess
 import multiprocessing
-
+import time
+start_time=time.time()
 def Translate(input_dir,output_dir):
 	make_temp="mkdir "+output_dir+"/translate"
 	os.system(make_temp)
@@ -22,23 +23,22 @@ def CARD(input_dir,output_dir):
 	make_temp="mkdir "+output_dir+"/CARD"
 	os.system(make_temp)
 	CARD_output_path=output_dir+"/CARD"
-	#command="ls "+input_dir+" -p . | grep -v /$"
-
-	#filename = popen(command,"r").readlines()
-	#filename = filename[19:]
-	#filename1 = []
-	#for name in filename:
-		#filename1.append(name[:-1])
-	#print(filename1)
-	counter = 0
-	#for files in filename1:
-	for files in os.listdir(input_dir):
-		prefix=files.split("_")[0]
-		#prefix = files[0:7]
-		command = "rgi -i "+input_dir+"/"+files+" -o "+CARD_output_path+"/"+prefix+"_CARD-RGI_coding"
-		subprocess.call(command,shell=True)
-		counter +=1
-		print("Done ...",counter)
+	hold_files=os.listdir(input_dir)
+	multi_list=[hold_files[x:x+4] for x in range(0,len(hold_files),4)]
+	for x in multi_list:
+		processes=[]
+		for files in x:
+			prefix=files.split("_")[0]
+			input_path=input_dir+"/"+files
+			final_output=CARD_output_path+"/"+prefix+"_CARD-RGI_coding"
+			command = ["rgi","-i",input_path,"-o",final_output]
+			f=os.tmpfile()
+			p=subprocess.Popen(command,stdout=f)
+			processes.append((p,f))
+		for p,f in processes:
+			p.wait()
+			f.seek(0)
+			f.close()
 	return(CARD_output_path)
 
 def VFDB(input_dir,output_dir):
@@ -46,37 +46,98 @@ def VFDB(input_dir,output_dir):
 	make_temp="mkdir "+output_dir+"/VFDB"
 	os.system(make_temp)
 	VFDB_output_path=output_dir+"/VFDB"
-	#filename = popen("ls ../gene_prediction_updated/Coding_FASTA -p . | grep -v /$","r").readlines()
-	#filename = filename[15:]
-	#filename1 = []
-	#for name in filename:
-		#filename1.append(name[:-1])
-
-	#for files in filename1:
-	for files in os.listdir(input_dir):
-		prefix=files.split("_")[0]
-		#prefix = files[0:7]
-		command = "blastn -db ../Tools/VFDB/Virulence_Factors_core -query "+input_dir+"/"+files+" -out "+VFDB_output_path+"/"+prefix+"_VFDB_coding -max_hsps 1 -max_target_seqs 1 -num_threads 4 -evalue 1e-5 "
-		subprocess.call(command,shell=True)
+	hold_files=os.listdir(input_dir)
+	multi_list=[hold_files[x:x+4] for x in range(0,len(hold_files),4)]
+	
+	for x in multi_list:
+		processes=[]
+		for files in x:
+			prefix=files.split("_")[0]
+			command = ["blastn", "-db", "../Tools/VFDB/Virulence_Factors_core", "-query",input_dir+"/"+files,"-out",VFDB_output_path+"/"+prefix+"_VFDB_coding", "-max_hsps","1","-max_target_seqs","1","-num_threads","4","-evalue","1e-5"]
+			f=os.tmpfile()
+			p=subprocess.Popen(command,stdout=f)
+			processes.append((p,f))
+		for p,f  in processes:
+			p.wait()
+			f.seek(0)
+			f.close()
 	return(VFDB_output_path)
 def Pilercr(input_dir,output_dir):
+	print("Running Piler-CR.....")
 	make_temp="mkdir "+output_dir+"/pilercr"
 	os.system(make_temp)
 	pilercr_output_path=output_dir+"/pilercr"
-	for filename in os.listdir(input_dir):
-		prefix = filename.split("_")[0]
-		file_path=input_dir+"/"+filename
-		command = "../Tools/pilercr/pilercr1.06/pilercr -in "+file_path+" -out "+pilercr_output_path+"/"+prefix+"_pilercr_coding"
-		subprocess.call(command,shell=True)
+	hold_files=os.listdir(input_dir)
+	multi_list=[hold_files[x:x+4] for x in range(0,len(hold_files),4)]
+	
+	for x in multi_list:
+		processes=[]
+		for filename in x:
+			prefix = filename.split("_")[0]
+			file_path=input_dir+"/"+filename
+			command = ["../Tools/pilercr/pilercr1.06/pilercr", "-in",file_path, "-out",pilercr_output_path+"/"+prefix+"_pilercr_coding"]
+			f=os.tmpfile()
+			p=subprocess.Popen(command,stdout=f)
+			processes.append((p,f))
+		for p,f in processes:
+			p.wait()
+			f.seek(0)
+			f.close()
 	return(pilercr_output_path)
+def format_uclust(input,output_dir):
+	file_split=open(input,"r")
+	new_file=open(output_dir+"/USEARCH/All_format.txt","w+")
+	file_split_read=file_split.readlines()
+	count=0
+	for lines in file_split_read:
+		if not ">" in lines:
+			lines_reformat=lines.rstrip()
+			new_file.write(lines_reformat)
+		elif ">" in lines:
+			if count ==0:
+				new_file.write(lines)
+			else:
+				output="\n"+lines
+				new_file.write(output)
+			count=1
+	new_file.close()
+	file_split.close()
+	return(output_dir+"/USEARCH/All_format.txt")
 def eggnog(input,output_dir):
+	splitLen=100
+	at=1
 	make_temp="mkdir "+output_dir+"/eggNOG"
         os.system(make_temp)
+	make_temp="mkdir "+output_dir+"/eggNOG_split"
+	os.system(make_temp)
+	outputBase=output_dir+"/eggNOG_split/eggNOG_split"
 	eggNOG_annotation_path=output_dir+"/eggNOG"
-	call_eggNog="emapper.py -i "+input+"  --data_dir ../Tools/eggnog_db -m diamond --dmnd_db /home/projects/group-c/Team3-FunctionalAnnotation/Tools/eggnog_db/eggnog_proteins.dmnd --translate -d bact --output_dir "+eggNOG_annotation_path+" -o pipeline"
-	print(call_eggNog)
-	os.system(call_eggNog)
-	return(eggNOG_annotation_path)
+	input_split=open(input,"r").read().split("\n")
+	for lines in range(0,len(input_split),splitLen):
+		outputData=input_split[lines:lines+splitLen]
+		output=open(outputBase+str(at)+'.txt','w')
+		output.write('\n'.join(outputData))
+		output.close()
+		at +=1
+	hold_files=os.listdir(output_dir+"/eggNOG_split")
+	multi_list=[hold_files[x:x+4] for x in range(0,len(hold_files),4)]
+	for x in multi_list:
+		processes=[]
+		for files in x:
+			prefix=files.split("_")[1]
+			file_path=output_dir+"/eggNOG_split/"+files
+			call_eggNog=["emapper.py", "-i",file_path,"--data_dir", "../Tools/eggnog_db","-m","diamond","--dmnd_db","/home/projects/group-c/Team3-FunctionalAnnotation/Tools/eggnog_db/eggnog_proteins.dmnd","--translate", "-d", "bact", "--output_dir",eggNOG_annotation_path, "-o","eggNOG_"+prefix]
+			f=os.tmpfile()
+			p=subprocess.Popen(call_eggNog,stdout=f)
+			processes.append((p,f))
+		for p,f in processes:
+			p.wait()
+			f.seek(0)
+			f.close()
+	
+	command="for i in "+output_dir+"/eggNOG_split; do cat $i > "+output_dir+"/eggNOG/eggNOG_combined.txt ; done"
+	os.system(commnand)
+	return(output_dir+'/eggNOG/eggNOG_combined.txt')
 def SignalP(input_dir,output_dir):
 	make_temp="mkdir "+output_dir+"/SignalP"
 	os.system(make_temp)
@@ -239,9 +300,7 @@ def formatCARD(input_dir,output_dir):
 	path_to_CARD=input_dir
 	print("formatting...card")
 	for filename in os.listdir(path_to_CARD):
-		#print("here1")
 		if "gff" in filename:
-			#print("here2")
 			sample=filename.split("_")[0]
 			path_CARD_file=path_to_CARD+"/"+filename
 			CARD_file=open(path_CARD_file,"r")
@@ -249,14 +308,12 @@ def formatCARD(input_dir,output_dir):
 			CARD_output_gff=open(CARD_output_path_gff,"w+")
 			for line in CARD_file:
 				if line.startswith("NODE"):
-					#print("here3")
 					annotation=line.split("\t")
 					node=annotation[0]
 					node=node.split("_")
 					node=node[:-1]
 					node_join="_"
 					node=node_join.join(node)
-					#print(node)
 					annotation[0]=node
 					annotation_join="\t"
 					print(annotation)
@@ -412,23 +469,25 @@ def main():
 	output_uclust=uclust(input_path,temp_dir)
 	input_eggnog=output_uclust[0]
 	input_map=output_uclust[1]
+	input_eggnog=format_uclust(input_eggnog,temp_dir)
 	Pilercr_output_path=Pilercr(input_path,temp_dir)
 	CARD_output_path=CARD(input_path,temp_dir)
 	#CARD_output_path=temp_dir+"/CARD"
 	VFDB_output_path=VFDB(input_path,temp_dir)
 	#VFDB_output_path=temp_dir+"/VFDB"
 	#SignalP_output_path=SignalP(input_path,temp_dir)
-	eggnog(input_eggnog,temp_dir)
+	eggNOG_output_path=eggnog(input_eggnog,temp_dir)
 	cluster_dict=mapNodes(input_map)
 	#Pilercr_output_path=temp_dir+"/pilercr"
 	formatPilercr(Pilercr_output_path,temp_dir)
-	eggNOG_output=temp_dir+"/eggNOG/pipeline.emapper.annotations"
-	formateggNOG(eggNOG_output,cluster_dict,temp_dir)
+	#eggNOG_output=temp_dir+"/eggNOG/pipeline.emapper.annotations"
+	formateggNOG(eggNOG_output_path,cluster_dict,temp_dir)
 	formatCARD(CARD_output_path,temp_dir)
 	formatVFDB(VFDB_output_path,temp_dir)
 	#formatSignalP("/home/projects/group-c/Team3-FunctionalAnnotation/Outputs/SignalP",temp_dir)
 	mergeGff(temp_dir)
 	#shutil.rmtree(temp_dir)
+	print(time.time()-start_time)
 if __name__ == "__main__":
     main()
 
