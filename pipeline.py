@@ -227,8 +227,7 @@ def mapNodes(input_clusters):
 
 ##---------------FORMAT OUTPUT OF PILERCR SO THAT IT IS IN GFF FORMAT---------------------------------
 def formatPilercr(input_dir,output_dir):
-	node_full_1="temp"
-	node_full_2="temp"
+	print("formatting Pilercr....")
 	make_temp="mkdir -p "+output_dir+"/format/Pilercr"
 	os.system(make_temp)
 	path_to_Pilercr=input_dir
@@ -240,21 +239,19 @@ def formatPilercr(input_dir,output_dir):
 		Pilercr_file_read=Pilercr_file.readlines()
 		Pilercr_output_path=path_to_output+"/"+sample+"_pilercr.gff"
 		Pilercr_output=open(Pilercr_output_path,"w+")
+		hold_nodes=[]
 		for line in range(len(Pilercr_file_read)):
-			if Pilercr_file_read[line].startswith("Array 1") or Pilercr_file_read[line].startswith("Array 2"):
+			if Pilercr_file_read[line].startswith("Array ") and ">" in Pilercr_file_read[line+1]:
 				node=Pilercr_file_read[line+1]
-				node_full_1=node.split("\t")[0]
-			if Pilercr_file_read[line].startswith("Array2"):
-				node=Pilercr_file_read[line+1]
-				node_full_2=mode.split("\t")[0]
+				node_full=node.split("\t")[0]
+				hold_nodes=hold_nodes+[node_full]
 			if 'SUMMARY BY POSITION' in Pilercr_file_read[line]:
 				index=0
 				while line+index < len(Pilercr_file_read):
-					#print(Pilercr_file_read[line+index])
-					if node_full_1 in Pilercr_file_read[line+index] or node_full_2 in Pilercr_file_read[line+index]:
-
-						if node_full_1 in Pilercr_file_read[line+index]:
-							node=node_full_1
+					for nodes in hold_nodes:
+					
+						if nodes in Pilercr_file_read[line+index]:
+							node=nodes
 							info_line=Pilercr_file_read[line+index+4].split(" ")
 							hold_digit=[]
 							for i in info_line:
@@ -262,20 +259,6 @@ def formatPilercr(input_dir,output_dir):
 									hold_digit=hold_digit+[i]
 							start=hold_digit[1]
 							end=str(int(hold_digit[2])+int(start))
-							gff_line=node.rstrip()+"\tPilercr\tCRISPR_array\t"+start+"\t"+end+"\t.\t.\t.\tfeature=Putative CRISPR array"
-							print(gff_line)
-							Pilercr_output.write(gff_line)
-						elif node_full_2 in Pilercr_file_read[line+index]:
-							node=node_full_2
-							info_line=Pilercr_file_read[line+index+4].split(" ")
-							print(info_line)
-							hold_digit=[]
-							for i in info_line:
-								if i.isdigit():
-									hold_digit=hold_digit+[i]
-							start=hold_digit[1]
-							end=str(int(hold_digit[2])+int(start))
-							#print(start,end)
 							gff_line=node.rstrip()+"\tPilercr\tCRISPR_array\t"+start+"\t"+end+"\t.\t.\t.\tfeature=Putative CRISPR array"
 							print(gff_line)
 							Pilercr_output.write(gff_line)
