@@ -1,4 +1,6 @@
 #!/usr/bin/env python2
+
+## ----------------------IMPORT NECESSARY PACKAGES----------------------- 
 from optparse import OptionParser
 import os
 from os import popen
@@ -7,6 +9,7 @@ import subprocess
 import multiprocessing
 import time
 start_time=time.time()
+
 def Translate(input_dir,output_dir):
 	make_temp="mkdir "+output_dir+"/translate"
 	os.system(make_temp)
@@ -18,6 +21,8 @@ def Translate(input_dir,output_dir):
     		all_of_it=file.read()
     		file.close
     		os.system('curl -s -d "dna_sequence='+str(all_of_it)+'&output_format=fasta" https://web.expasy.org/cgi-bin/translate/dna2aa.cgi > '+Translate_output_path+'/'+sample+'_proteinconv.fasta')
+
+##---------------------RUN CARD------------------------------
 def CARD(input_dir,output_dir):
 	print("Running CARD-rgi......")
 	make_temp="mkdir "+output_dir+"/CARD"
@@ -39,8 +44,14 @@ def CARD(input_dir,output_dir):
 			p.wait()
 			f.seek(0)
 			f.close()
+	for file in os.listdir(CARD_output_path):
+		file_path=CARD_output_path+'/'+file
+		if os.stat(file_path).st_size == 0:
+			command="rm "+file_path
+			os.system(command)
 	return(CARD_output_path)
 
+##-----------------------RUN VFDB--------------------------------
 def VFDB(input_dir,output_dir):
 	print("Running blastp on VFDB......")
 	make_temp="mkdir "+output_dir+"/VFDB"
@@ -61,7 +72,14 @@ def VFDB(input_dir,output_dir):
 			p.wait()
 			f.seek(0)
 			f.close()
+	for file in os.listdir(VFDB_output_path):
+		file_path=VFDB_output_path+"/"+file
+		if os.stat(file_path).st_size == 0:
+			command="rm "+file_path
+			os.system(command)
 	return(VFDB_output_path)
+
+##--------------------RUN PILERCR----------------------------------
 def Pilercr(input_dir,output_dir):
 	print("Running Piler-CR.....")
 	make_temp="mkdir "+output_dir+"/pilercr"
@@ -83,7 +101,14 @@ def Pilercr(input_dir,output_dir):
 			p.wait()
 			f.seek(0)
 			f.close()
+	for file in os.listdir(pilercr_output_path):
+		file_path=pilercr_output_path+"/"+file
+		if os.stat(file_path).st_size == 0:
+			command="rm "+file_path
+			os.system(command)
 	return(pilercr_output_path)
+
+##-------------------------FORMAT OUTPUT FROM UCLUST SO IT CAN BE EASILY SPLIT FOR MULTIPROCESSING WITH EGGNOG----------------------------
 def format_uclust(input,output_dir):
 	file_split=open(input,"r")
 	new_file=open(output_dir+"/USEARCH/All_format.txt","w+")
@@ -103,6 +128,8 @@ def format_uclust(input,output_dir):
 	new_file.close()
 	file_split.close()
 	return(output_dir+"/USEARCH/All_format.txt")
+
+##----------------------RUN EGGNOG----------------------------------------------
 def eggnog(input,output_dir):
 	splitLen=100
 	at=1
@@ -138,6 +165,8 @@ def eggnog(input,output_dir):
 	command="for i in "+output_dir+"/eggNOG_split; do cat $i > "+output_dir+"/eggNOG/eggNOG_combined.txt ; done"
 	os.system(commnand)
 	return(output_dir+'/eggNOG/eggNOG_combined.txt')
+
+##---------------------------RUN SIGNALP----------------------------------
 def SignalP(input_dir,output_dir):
 	make_temp="mkdir "+output_dir+"/SignalP"
 	os.system(make_temp)
@@ -145,6 +174,8 @@ def SignalP(input_dir,output_dir):
 	for filename in os.listdir(input_dir):
 		sample=filename.split("_")[0]
     		os.system("/home/projects/group-c/Team3-FunctionalAnnotation/Tools/signalp-5.0b/bin/signalp -fasta "+input_dir+"/"+filename+" -org gram+ -format short -gff3 -prefix "+output_dir+"/SignalP/"+sample+"_signalp")
+
+##--------------------------RUN UCLUST FOR EGGNOG INPUT---------------------------
 def uclust(input,output_dir):
 	make_temp="mkdir "+output_dir+"/USEARCH"
 	os.system(make_temp)
@@ -171,6 +202,7 @@ def uclust(input,output_dir):
 	os.system(call_usearch)
 	return(cluster_path,uc_path)
 
+##--------------MAP NODES OF CLUSTERS FOR LATER MAPPING OF EGGNOG OUTPUTS TO EACH FILE---------------------
 def mapNodes(input_clusters):
 	path_to_clusters=input_clusters
 	coding_cluster=open(path_to_clusters,"r")
@@ -192,6 +224,8 @@ def mapNodes(input_clusters):
 			cluster_dict[node_cluster]=[line_cluster]
 	coding_cluster.close()
 	return(cluster_dict)
+
+##---------------FORMAT OUTPUT OF PILERCR SO THAT IT IS IN GFF FORMAT---------------------------------
 def formatPilercr(input_dir,output_dir):
 	node_full_1="temp"
 	node_full_2="temp"
@@ -249,6 +283,7 @@ def formatPilercr(input_dir,output_dir):
 		Pilercr_output.close()
 		Pilercr_file.close()
 
+##-------------------------FORMAT OUTPUT OF EGGNOG SO IT IS IN GFF FORMAT--------------------------
 def formateggNOG(input,cluster_dict,output_dir):
 	make_temp="mkdir -p "+output_dir+"/format/eggNOG"
 	eggNog_file=open(input,"r")
@@ -294,6 +329,8 @@ def formateggNOG(input,cluster_dict,output_dir):
 	command2="rm "+output_dir+"/format/eggNOG/*.gff"
 	os.system(command)
 	os.system(command2)
+
+##-------------------FORMAT CARD OUTPUT SO IT IS IN ONE LINE GFF FORMAT-------------------------------
 def formatCARD(input_dir,output_dir):
 	make_temp="mkdir -p "+output_dir+"/format/CARD"
 	os.system(make_temp)
@@ -316,18 +353,19 @@ def formatCARD(input_dir,output_dir):
 					node=node_join.join(node)
 					annotation[0]=node
 					annotation_join="\t"
-					print(annotation)
+					#print(annotation)
 					annotation=annotation_join.join(annotation)
 					gff_line=annotation
 					#print(gff_line)
 					CARD_output_gff.write(gff_line)
 			CARD_output_gff.close()	
-	
+
+##-------------------FORMAT VFDB SO IT IS IN GFF FORMAT-------------------------------------	
 def formatVFDB(input_dir,output_dir):
 	VFDB_dir=input_dir
 	make_temp="mkdir -p "+output_dir+"/format/VFDB"
 	os.system(make_temp)
-
+	print("formatting...VFDB")
 	for filename in os.listdir(VFDB_dir):
 		full_file_path=VFDB_dir+"/"+filename
 		VFDB_file=open(full_file_path,"r")
@@ -365,7 +403,10 @@ def formatVFDB(input_dir,output_dir):
 		
 		VFDB_file.close()
 		gff_VFDB.close()
+
+##-----------------------------------FORMAT SIGNALP SO IT IS IN GFF FORMAT------------------------------
 def formatSignalP(input_dir,output_dir):
+	print("Formatting...SignalP")
 	path_to_SignalP=input_dir
 	make_temp="mkdir -p "+output_dir+"/format/SignalP"
 	os.system(make_temp)
@@ -382,13 +423,16 @@ def formatSignalP(input_dir,output_dir):
 					SignalP_gff.write(line)
 			SignalP_gff.close()
 			SignalP_file.close()
+
+##-------------------------------MERGE ALL GFF FORMATTED FILES INTO ONE SO THAT NODES ARE IN ORDER FOR EACH SAMPLE------------------------
 def mergeGff(output_dir):
+	print("Merging Files.....")
 	make_temp="mkdir -p ./Outputs/merged"
 	os.system(make_temp)
 	sample_dict={}
 	mapped_dir_path=output_dir+"/format"
 	for dir_name in os.listdir(mapped_dir_path):
-		if dir_name=="eggNog" or dir_name=="CARD" or dir_name=="VFDB" or dir_name=="eggNOG" or dir_name=="SignalP":
+		if dir_name=="eggNog" or dir_name=="CARD" or dir_name=="VFDB" or dir_name=="eggNOG" or dir_name=="SignalP" or dir_name=="Pilercr":
 			tool_dir_path=mapped_dir_path+"/"+dir_name
 			for filename in os.listdir(tool_dir_path):
 				if "gff" in filename and not "getorf" in filename:
@@ -440,7 +484,7 @@ def mergeGff(output_dir):
 		sorted_list=sorted(sorted_dict, key=lambda key1: int(key1.split("_")[1]))
 		for value_item in sorted_list:
 			item=sorted_dict.get(value_item)
-			print(item)
+			#print(item)
 			value_sort=sorted(item, key=lambda key1: (int((key1.split(":")[1]).split("-")[1])))
 			for get_item in value_sort:
 				loop_lines=feature_dict.get(get_item)
@@ -450,12 +494,72 @@ def mergeGff(output_dir):
 				for annotation in loop_lines:
 					output_file.write(annotation)
 		output_file.close()
-	
+		make_temp="mkdir -p ./Outputs/CARD"
+		os.system(make_temp)
+		make_temp="mkdir -p ./Outputs/VFDB"
+		os.system(make_temp)
+		copy_card="for i in "+output_dir+"/format/CARD/*; do cp $i ./Outputs/CARD; done"
+		#print(copy_card)
+		os.system(copy_card)
+		copy_vfdb="for i in "+output_dir+"/format/VFDB/*; do cp $i ./Outputs/VFDB; done"
+		os.system(copy_vfdb)
+		#print(copy_vfdb)
+def GetFASTA(input,dir,toolname):
+	make_temp="mkdir -p ./Outputs/fasta/"+toolname
+	os.system(make_temp)
+	for filename in os.listdir(dir):
+		if "gff" in filename:
+			gff_file_path=dir+"/"+filename
+			print(filename)
+			sample=filename.split("_")[0]
+			for file in os.listdir(input):
+				if sample in file:
+					fasta_file_path=input+"/"+file
+					output_path="./Outputs/fasta/"+toolname+"/"+sample+"_"+toolname+".fna"
+					command="bedtools getfasta -fi "+fasta_file_path+" -bed "+gff_file_path+" > "+output_path
+			#print(command)
+					os.system(command)
+	command="rm "+input+"/*.fai"
+	os.system(command)
+def GetFASTA_all(input,dir):
+	make_temp="mkdir -p ./Outputs/fasta/merged"
+	os.system(make_temp)
+
+	for filename in os.listdir(dir):
+		sample=filename.split("_")[0]
+		path_to_file=dir+"/"+filename
+		for file in os.listdir(input):
+			if sample in file:
+				path_to_fna=input+"/"+file
+				fna_file=open(path_to_fna,"r")
+				fna_file_read=fna_file.readlines()
+				output_path="./Outputs/fasta/merged/"+sample+"_for_comparative.fna"
+				output_file=open(output_path,"w+")
+				gff_file=open(path_to_file,"r")
+				for line in gff_file:
+					if "#" in line:
+						node=line.split(" ")[1]
+						for line2 in range(len(fna_file_read)):
+							if node in fna_file_read[line2]:
+								node_line=str(fna_file_read[line2])
+								sequence_line=str(fna_file_read[line2+1])
+								output_file.write(node_line)
+								output_file.write(sequence_line)
+					
+				output_file.close()
+				fna_file.close()
+				gff_file.close()
+	#command="rm "+input+"/*.fai"
+	#os.system(command)
+		
 def opts():
 	parser = OptionParser()
-	parser.add_option("-u", "--usearch", dest="usearch_path", help="path to USEARCH")
-	#parser.add_option("-e", "--eggnog", dest="eggnog_path", help ="path to eggNog")
-	#parser.add_option("-c", "--CARD", dest="card_path", help="path to CARD-rgi")
+	#parser.add_option("-u", "--usearch", dest="usearch_path", help="path to USEARCH")
+	parser.add_option("-e", "--eggnog", action="store_true", dest="eggnog_run", help ="run eggNOG")
+	parser.add_option("-p", "--pilercr", action="store_true",dest="pilercr_run", help ="path to pilercr")
+	parser.add_option("-s", "--signalP", action="store_true",dest="signalP_run", help ="path to SignalP")
+	#parser.add_option("-hmm", "--hmmtop", action="store_true",dest="hmmtop_run", help ="path to HMMTOP")
+	#parser.add_option("-c", "--CARD", dest="card_run", help="path to CARD-rgi")
 	parser.add_option("-i", "--input", dest="input_path", help="path to Input")
 	return(parser.parse_args())
 	
@@ -464,30 +568,47 @@ def main():
 	make_temp="mkdir "+temp_dir
 	os.system(make_temp)
 	options, args = opts()
+	eggNOG_run=options.eggnog_run
+	pilercr_run=options.pilercr_run
+	signalP_run=options.signalP_run
+	#hmmtop_run=options.hmmtop_run
 	input_path=options.input_path
 	#Translate(input_path,temp_dir)
-	output_uclust=uclust(input_path,temp_dir)
-	input_eggnog=output_uclust[0]
-	input_map=output_uclust[1]
-	input_eggnog=format_uclust(input_eggnog,temp_dir)
-	Pilercr_output_path=Pilercr(input_path,temp_dir)
+	print(pilercr_run,signalP_run,eggNOG_run)
+	
+	if pilercr_run != None:
+		Pilercr_output_path=Pilercr(input_path,temp_dir)
+		formatPilercr(Pilercr_output_path,temp_dir)
+	if signalP_run !=None:
+		SignalP_output_path=SignalP(input_path,temp_dir)
+		formatSignalP("/home/projects/group-c/Team3-FunctionalAnnotation/Outputs/SignalP",temp_dir)
+	if eggNOG_run != None:
+		output_uclust=uclust(input_path,temp_dir)
+		input_eggnog=output_uclust[0]
+		input_map=output_uclust[1]
+		input_eggnog=format_uclust(input_eggnog,temp_dir)
+		cluster_dict=mapNodes(input_map)
+		eggNOG_output_path=eggnog(input_eggnog,temp_dir)
+		formateggNOG(eggNOG_output_path,cluster_dict,temp_dir)
+
+##Run CARD and VFDB by default 
 	CARD_output_path=CARD(input_path,temp_dir)
-	#CARD_output_path=temp_dir+"/CARD"
+	
 	VFDB_output_path=VFDB(input_path,temp_dir)
-	#VFDB_output_path=temp_dir+"/VFDB"
-	#SignalP_output_path=SignalP(input_path,temp_dir)
-	eggNOG_output_path=eggnog(input_eggnog,temp_dir)
-	cluster_dict=mapNodes(input_map)
-	#Pilercr_output_path=temp_dir+"/pilercr"
-	formatPilercr(Pilercr_output_path,temp_dir)
-	#eggNOG_output=temp_dir+"/eggNOG/pipeline.emapper.annotations"
-	formateggNOG(eggNOG_output_path,cluster_dict,temp_dir)
+
+##Reformat CARD and VFDB  outputs into gff format to be merged
 	formatCARD(CARD_output_path,temp_dir)
 	formatVFDB(VFDB_output_path,temp_dir)
-	#formatSignalP("/home/projects/group-c/Team3-FunctionalAnnotation/Outputs/SignalP",temp_dir)
+
+##Merge all of the reformated files so there is one full gff file for each sample 
 	mergeGff(temp_dir)
 	#shutil.rmtree(temp_dir)
-	print(time.time()-start_time)
+	#print(time.time()-start_time)
+##Get Fasta files for annotations
+	GetFASTA(input_path,"./Outputs/CARD","CARD")
+	GetFASTA(input_path,"./Outputs/VFDB","VFDB")
+	GetFASTA_all(input_path,"./Outputs/merged")
+	shutil.rmtree(temp_dir)
 if __name__ == "__main__":
     main()
 
