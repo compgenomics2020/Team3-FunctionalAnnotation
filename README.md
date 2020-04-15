@@ -7,7 +7,9 @@ This pipeline combine several tools together to make functional annotation on ge
 * Gulay Bengu Ulukaya <br />
 * Cheng Shen-Yi <br />
 ***
-## USEARCH <br />
+## Clustering
+
+### USEARCH <br />
 We chose to cluster the genes based upon similarity in order to reduce the amount of overlap when annotating these genes. This is executed through the UCLUST algorithm. UCLUST preforms this by creating clusters that contain a single centroid sequence upon which the other sequences must have a certain sequence similarity to be considered apart of the cluster. We can set an identity threshold which can be thought of as the radius of the cluster.
 ***
 ## Homology Tools
