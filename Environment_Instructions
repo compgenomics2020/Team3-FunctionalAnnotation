@@ -1,4 +1,4 @@
-######## Seting up the enviroment documentation ########
+######## Setting up the enviroment documentation ########
 
 #go to the path where miniconda is to be added and export it to the $PATH vairble in your .bashrc
 
