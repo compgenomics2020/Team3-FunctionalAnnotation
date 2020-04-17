@@ -64,7 +64,7 @@ def VFDB(input_dir,output_dir):
 		processes=[]
 		for files in x:
 			prefix=files.split("_")[0]
-			command = ["blastn", "-db", "../Tools/VFDB/Virulence_Factors_core", "-query",input_dir+"/"+files,"-out",VFDB_output_path+"/"+prefix+"_VFDB_coding", "-max_hsps","1","-max_target_seqs","1","-num_threads","4","-evalue","1e-5"]
+			command = ["blastn", "-db", "/home/projects/group-c/Team3-FunctionalAnnotation/Tools/VFDB/Virulence_Factors_core", "-query",input_dir+"/"+files,"-out",VFDB_output_path+"/"+prefix+"_VFDB_coding", "-max_hsps","1","-max_target_seqs","1","-num_threads","4","-evalue","1e-5"]
 			f=os.tmpfile()
 			p=subprocess.Popen(command,stdout=f)
 			processes.append((p,f))
@@ -93,7 +93,7 @@ def Pilercr(input_dir,output_dir):
 		for filename in x:
 			prefix = filename.split("_")[0]
 			file_path=input_dir+"/"+filename
-			command = ["../Tools/pilercr/pilercr1.06/pilercr", "-in",file_path, "-out",pilercr_output_path+"/"+prefix+"_pilercr_coding"]
+			command = ["/home/projects/group-c/Team3-FunctionalAnnotation/Tools/pilercr/pilercr1.06/pilercr", "-in",file_path, "-out",pilercr_output_path+"/"+prefix+"_pilercr_coding"]
 			f=os.tmpfile()
 			p=subprocess.Popen(command,stdout=f)
 			processes.append((p,f))
@@ -198,7 +198,7 @@ def uclust(input,output_dir):
 	output.close()
 	cluster_path=output_dir+"/USEARCH/All_clustered.fasta"
 	uc_path=output_dir+"/USEARCH/clusters.uc"
-	call_usearch="../Tools/USEARCH/usearch -cluster_fast "+combine_path+" -id 0.97 -centroids "+cluster_path+" -uc "+uc_path 
+	call_usearch="/home/projects/group-c/Team3-FunctionalAnnotation/Tools/USEARCH/usearch -cluster_fast "+combine_path+" -id 0.97 -centroids "+cluster_path+" -uc "+uc_path 
 	os.system(call_usearch)
 	return(cluster_path,uc_path)
 
