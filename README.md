@@ -46,5 +46,5 @@ CRISPR are family of DNA sequences found in the genomes of prokaryotic organisms
 ***
 
 ## Script Execution
-`pipeline.py -e <path/to/eggNOG> -p <path/to/Piler-CR> -s <path/to/signalP> -i <path/to/input>`<br />
+`pipeline.py -e <use eggNOG> -p <use Pilercr> -i <path/to/input>`<br />
 ***
