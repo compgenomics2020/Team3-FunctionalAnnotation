@@ -540,7 +540,7 @@ def opts():
 	#parser.add_option("-u", "--usearch", dest="usearch_path", help="path to USEARCH")
 	parser.add_option("-e", "--eggnog", action="store_true", dest="eggnog_run", help ="run eggNOG")
 	parser.add_option("-p", "--pilercr", action="store_true",dest="pilercr_run", help ="path to pilercr")
-	parser.add_option("-s", "--signalP", action="store_true",dest="signalP_run", help ="path to SignalP")
+	#parser.add_option("-s", "--signalP", action="store_true",dest="signalP_run", help ="path to SignalP")
 	#parser.add_option("-hmm", "--hmmtop", action="store_true",dest="hmmtop_run", help ="path to HMMTOP")
 	#parser.add_option("-c", "--CARD", dest="card_run", help="path to CARD-rgi")
 	parser.add_option("-i", "--input", dest="input_path", help="path to Input")
@@ -562,9 +562,9 @@ def main():
 	if pilercr_run != None:
 		Pilercr_output_path=Pilercr(input_path,temp_dir)
 		formatPilercr(Pilercr_output_path,temp_dir)
-	if signalP_run !=None:
-		SignalP_output_path=SignalP(input_path,temp_dir)
-		formatSignalP("/home/projects/group-c/Team3-FunctionalAnnotation/Outputs/SignalP",temp_dir)
+	#if signalP_run !=None:
+		#SignalP_output_path=SignalP(input_path,temp_dir)
+		#formatSignalP("/home/projects/group-c/Team3-FunctionalAnnotation/Outputs/SignalP",temp_dir)
 	if eggNOG_run != None:
 		output_uclust=uclust(input_path,temp_dir)
 		input_eggnog=output_uclust[0]
